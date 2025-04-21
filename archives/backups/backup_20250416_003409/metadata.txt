@@ -1,0 +1,6 @@
+Backup created: 20250416_003409
+Git commit: 4ca81cfbe20bf56be056ae3663a0b847fba8605f
+Database size: 512K
+Migration count:       22
+Database: pdf_extractor
+User: greg

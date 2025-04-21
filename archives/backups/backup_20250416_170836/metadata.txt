@@ -1,0 +1,7 @@
+Backup created: 20250416_170836
+Git commit: de111363e0dabde7118b8b620d283fba40b0ced8
+Database size: 492K
+Migration count:       26
+Database: pdf_extractor
+User: greg
+Memory Bank: cline_docs

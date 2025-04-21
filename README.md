@@ -1,72 +1,113 @@
 # LedgerFlow
 
-A modern Django-based financial transaction management system with AI-powered categorization and analysis.
+LedgerFlow is a Django-based application designed to handle financial document processing and data extraction. It provides automated extraction of financial data from PDF documents, structured storage and categorization of financial transactions, and integration with accounting systems.
 
 ## Features
 
-- **Multi-Format Support**: Handles various financial document formats
-- **AI-Powered Categorization**: Intelligent transaction classification using GPT models
-- **Multi-Client Support**: Manage multiple client accounts with separate configurations
-- **Google Sheets Integration**: Export data to spreadsheets for analysis
-- **Custom Category Management**: AI-assisted category creation and management
-- **Business Context Awareness**: Industry-specific categorization
+- PDF document upload and processing
+- Automated data extraction
+- Transaction categorization
+- Business profile management
+- Data validation and verification
+- Modern web-based interface
 
-## Installation
+## Prerequisites
+
+- Docker Desktop
+- Make (optional, for using Makefile commands)
+
+## Development Setup
 
 1. Clone the repository:
 ```bash
-git clone git@github.com:glindberg2000/LedgerFlow.git
-cd LedgerFlow
+   git clone https://github.com/yourusername/ledgerflow.git
+   cd ledgerflow
 ```
 
-2. Create and activate a virtual environment:
+2. Create environment files:
+   ```bash
+   cp .env.dev.template .env.dev
+   ```
+   Edit `.env.dev` with your development settings.
+
+3. Build and start the development environment:
 ```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scriptsctivate
+   make dev-build
+   make dev-up
 ```
 
-3. Install dependencies:
+4. Run migrations:
 ```bash
-pip install -r requirements.txt
+   make migrate
 ```
 
-4. Set up environment variables:
+5. Create a superuser:
 ```bash
-cp .env.example .env
-# Edit .env with your API keys and settings
-```
+   docker compose -f docker-compose.yml -f docker-compose.dev.yml exec django python manage.py createsuperuser
+   ```
 
-5. Run migrations:
+The application will be available at:
+- Main application: http://localhost:9001
+- Adminer (database management): http://localhost:8082
+
+## Development Commands
+
+- `make help` - Show available commands
+- `make dev-up` - Start development environment
+- `make dev-down` - Stop development environment
+- `make migrate` - Run database migrations
+- `make migrations` - Create database migrations
+- `make shell` - Open Django shell
+- `make test` - Run tests
+- `make lint` - Run linters
+- `make format` - Format code
+- `make clean` - Remove Python artifacts
+
+## Production Deployment
+
+1. Create and configure production environment file:
+   ```bash
+   cp .env.dev.template .env.prod
+   ```
+   Edit `.env.prod` with your production settings.
+
+2. Build and start the production environment:
 ```bash
-python manage.py migrate
+   make prod-build
+   make prod-up
+   ```
+
+3. Run migrations:
+   ```bash
+   docker compose -f docker-compose.yml -f docker-compose.prod.yml exec django python manage.py migrate
 ```
 
-## Development
-
-### Project Structure
+## Project Structure
 
 ```
-app/
-├── ledgerflow/     # Django project settings and configuration
-├── client/         # Client management module
-├── parser/         # Document parsing modules
-├── sheets/         # Google Sheets integration
-└── utils/          # Utility functions
-```
-
-### Running the Development Server
-
-```bash
-python manage.py runserver
+ledgerflow/
+├── app/                    # Django application
+│   ├── core/              # Core functionality
+│   ├── documents/         # Document processing
+│   ├── profiles/          # Business profiles
+│   └── ledgerflow/        # Project settings
+├── requirements/          # Python dependencies
+│   ├── base.txt          # Base requirements
+│   └── dev.txt           # Development requirements
+├── static/               # Static files
+├── media/                # User-uploaded files
+├── docker-compose.yml    # Base Docker configuration
+├── docker-compose.dev.yml # Development configuration
+├── docker-compose.prod.yml # Production configuration
+└── Dockerfile           # Docker build instructions
 ```
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+1. Create a feature branch
+2. Make your changes
+3. Run tests and linting
+4. Submit a pull request
 
 ## License
 

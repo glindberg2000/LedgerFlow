@@ -1,0 +1,15 @@
+Backup created: 20250417_203148
+Git commit: e1694ade24e09a0bd91268baa406ab7676fbc50c
+
+Main Instance (Port 8001):
+Database: mydatabase
+User: newuser
+Database size:   0B
+
+Test Instance (Port 8000):
+Database: test_database
+User: newuser
+Database size:   0B
+
+Migration count:       67
+Memory Bank: cline_docs

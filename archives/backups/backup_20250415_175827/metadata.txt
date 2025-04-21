@@ -1,0 +1,4 @@
+Backup created: 20250415_175827
+Git commit: f033d2189c8ce0bb71f61c532edcf2df42cda33f
+Database size:   0B
+Migration count:        1

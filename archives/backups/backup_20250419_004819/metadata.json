@@ -1,0 +1,28 @@
+{
+    "timestamp": "2025-04-19T07:48:20Z",
+    "databases": [
+        {
+            "name": "mydatabase",
+            "host": "localhost",
+            "port": 5432,
+            "user": "newuser",
+            "instance": "main"
+        },
+        {
+            "name": "mydatabase",
+            "host": "localhost",
+            "port": 5433,
+            "user": "newuser",
+            "instance": "test"
+        }
+    ],
+    "django_instances": [
+        {
+            "name": "main_instance",
+            "path": "test_django/pdf_extractor_web",
+            "migrations_count":       34
+        }
+    ],
+    "environment": "development",
+    "backup_script_version": "2.0.0"
+}

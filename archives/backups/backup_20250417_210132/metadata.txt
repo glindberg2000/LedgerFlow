@@ -1,0 +1,5 @@
+Backup created: Thu Apr 17 21:01:32 PDT 2025
+Git commit: cfc41db03f4ce4d44846687a42cb3a23bda7693e
+Database versions:
+- Main:  PostgreSQL 17.4 (Debian 17.4-1.pgdg120+2) on aarch64-unknown-linux-gnu, compiled by gcc (Debian 12.2.0-14) 12.2.0, 64-bit
+- Test:  PostgreSQL 17.4 (Debian 17.4-1.pgdg120+2) on aarch64-unknown-linux-gnu, compiled by gcc (Debian 12.2.0-14) 12.2.0, 64-bit

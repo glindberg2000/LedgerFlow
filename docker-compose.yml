@@ -1,0 +1,28 @@
+version: '3.9'
+
+services:
+  django:
+    build:
+      context: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "9001:8000"
+    restart: on-failure
+    volumes:
+      - ./media:/app/media
+      - ./static:/app/static
+
+  postgres:
+    image: postgres:17.4
+    volumes:
+      - ledgerflow_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"]
+      interval: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  ledgerflow_postgres_data: 

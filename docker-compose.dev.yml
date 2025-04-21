@@ -1,0 +1,36 @@
+version: '3.9'
+
+services:
+  django:
+    build:
+      target: dev
+    volumes:
+      - .:/app:cached
+      - ./static:/static:cached
+    environment:
+      - DEBUG=1
+    env_file:
+      - .env.dev
+    ports:
+      - "9001:8000"
+
+  postgres:
+    image: postgres:17.4
+    env_file:
+      - .env.dev
+    volumes:
+      - ledgerflow_postgres_data:/var/lib/postgresql/data:delegated
+    ports:
+      - "5435:5432"
+
+  adminer:
+    image: adminer
+    depends_on:
+      - postgres
+    ports:
+      - "127.0.0.1:8082:8080"
+    restart: unless-stopped
+
+volumes:
+  ledgerflow_postgres_data:
+    name: ledgerflow_postgres_data_dev 
