@@ -1,37 +1,104 @@
 # Product Context
 
-## Purpose
-LedgerFlow is a Django-based application migrated from the PDF-extractor project, designed to handle financial document processing and data extraction.
+## Product Overview
 
-## Core Problems Solved
-1. Automated extraction of financial data from PDF documents
-2. Structured storage and categorization of financial transactions
-3. Integration with accounting systems
-4. Business profile management
-5. Data validation and verification
+LedgerFlow is a Django-based application designed to manage and streamline financial ledger operations. The system provides a robust platform for tracking, managing, and analyzing financial transactions and documents.
 
-## Expected Functionality
-1. PDF Upload and Processing
-   - Support for various financial document formats
-   - Automated data extraction
-   - Error handling and validation
+### Purpose
 
-2. Data Management
-   - Transaction storage
-   - Business profile management
-   - Data categorization
-   - Export capabilities
+The primary purpose of LedgerFlow is to:
+- Automate financial ledger management
+- Provide accurate transaction tracking
+- Facilitate document management
+- Enable efficient financial reporting
+- Streamline workflow processes
 
-3. User Interface
-   - Web-based dashboard
+### Problems Solved
+
+1. Transaction Management
+   - Automated transaction recording
+   - Real-time balance tracking
+   - Transaction categorization
+   - Multi-currency support
+
+2. Document Handling
+   - Secure document storage
+   - Document version control
+   - Automated document processing
+   - Document search and retrieval
+
+3. Reporting & Analysis
+   - Custom report generation
+   - Financial analytics
+   - Audit trail maintenance
+   - Data visualization
+
+4. Workflow Automation
+   - Automated approval processes
+   - Task management
+   - Notification system
+   - Status tracking
+
+### How It Works
+
+#### User Interface
+- Clean, intuitive web interface
+- Role-based access control
+- Responsive design
+- Real-time updates
+
+#### Core Functionality
+1. Transaction Processing
+   - Transaction entry
+   - Validation rules
+   - Categorization
+   - Balance calculation
+
+2. Document Management
    - Upload interface
-   - Profile management
-   - Transaction review and editing
+   - Storage system
+   - Version control
+   - Search functionality
 
-4. Integration Points
-   - Database (PostgreSQL)
-   - File storage
-   - External APIs (if applicable)
+3. Reporting System
+   - Report templates
+   - Custom report builder
+   - Export options
+   - Scheduling
+
+4. Workflow Engine
+   - Process definition
+   - Task assignment
+   - Status tracking
+   - Notifications
+
+### Integration Points
+
+- Database (PostgreSQL)
+- Authentication system
+- File storage
+- External APIs (as needed)
+
+### Security Considerations
+
+- Role-based access
+- Data encryption
+- Audit logging
+- Backup systems
+
+### Future Enhancements
+
+1. Planned Features
+   - Advanced analytics
+   - Mobile application
+   - API integrations
+   - Automated reconciliation
+
+2. Scalability
+   - Performance optimization
+   - Infrastructure scaling
+   - Feature expansion
+   - User base growth
 
 ## Key Requirements
 1. Development Environment

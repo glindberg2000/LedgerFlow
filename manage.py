@@ -6,7 +6,10 @@ import sys
 
 def main():
     """Run administrative tasks."""
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "ledgerflow.settings")
+    # Add the current directory to the Python path
+    sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "pdf_extractor_web.settings")
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:

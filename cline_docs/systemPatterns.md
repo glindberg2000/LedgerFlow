@@ -1,25 +1,129 @@
 # System Patterns
 
-## Architecture Overview
-1. Docker-based Development
-   - Multi-container setup
-   - Development/Production environments
-   - Volume mounts for local development
+## System Architecture
 
-2. Django Application Structure
-   ```
-   ledgerflow/
-   ├── ledgerflow/          # Django project
-   │   ├── __init__.py
-   │   ├── settings.py
-   │   ├── urls.py
-   │   └── wsgi.py
-   ├── apps/               # Django applications
-   │   └── profiles/       # Profiles app
-   ├── manage.py
-   ├── static/            # Static files
-   └── media/            # User uploads
-   ```
+### Docker-based Development
+- Multi-container setup with Docker Compose
+- Separate containers for:
+  - Django application
+  - PostgreSQL database
+  - Redis cache
+- Persistent volumes for database data
+- Hot-reload for development
+
+### Database Management
+- PostgreSQL as primary database
+- Regular backup strategy using backup_database.sh
+- Restore capability using restore_database.sh
+- Migration management through Django
+
+### Development Workflow
+1. Environment setup through .env files
+2. Docker container orchestration
+3. Database migrations
+4. Static file collection
+5. Superuser creation
+
+### Backup and Restore Pattern
+1. Automated backup creation
+2. Compressed SQL dumps (.sql.gz)
+3. Restore process:
+   - Decompress backup
+   - Drop existing tables
+   - Restore from SQL
+   - Apply migrations if needed
+
+### Error Handling
+- Database connection retries
+- Redis connection fallback
+- Static file serving fallback
+- Migration conflict resolution
+
+### Security Patterns
+- Environment-based configuration
+- No hardcoded credentials
+- Secure password storage
+- Limited port exposure
+
+## Architecture Overview
+
+### System Architecture
+- Django-based monolithic application
+- Containerized services using Docker
+- PostgreSQL for data persistence
+- Environment-based configuration
+
+### Design Patterns
+
+#### Application Structure
+- Django apps for modular functionality
+- Model-View-Template (MVT) pattern
+- Class-based views for consistency
+- URL routing for RESTful endpoints
+
+#### Data Layer
+- Django ORM for database operations
+- Migration-based schema management
+- Automated backup/restore procedures
+- Data validation through Django forms
+
+#### Authentication & Authorization
+- Django authentication system
+- Role-based access control
+- Session management
+- Secure password handling
+
+#### File Management
+- Media file handling
+- Static file serving
+- File upload processing
+- Backup management
+
+### Development Patterns
+
+#### Code Organization
+- Modular Django apps
+- Separation of concerns
+- DRY (Don't Repeat Yourself)
+- SOLID principles
+
+#### Testing
+- Unit tests with Django test framework
+- Integration testing
+- Test fixtures and factories
+- Coverage reporting
+
+#### Deployment
+- Docker-based deployment
+- Environment separation
+- Configuration management
+- Backup procedures
+
+### Best Practices
+
+#### Code Quality
+- PEP 8 compliance
+- Documentation standards
+- Type hints usage
+- Code review process
+
+#### Security
+- Environment variables for secrets
+- CSRF protection
+- XSS prevention
+- SQL injection protection
+
+#### Performance
+- Database optimization
+- Query optimization
+- Caching strategies
+- Resource management
+
+#### Maintenance
+- Regular backups
+- Version control
+- Documentation updates
+- Dependency management
 
 ## Key Technical Decisions
 1. Port Configuration
@@ -105,4 +209,36 @@
    - Debug disabled
    - Secure credentials
    - Limited port exposure
-   - HTTPS required 
+   - HTTPS required
+
+## Tool Architecture
+- Tools are modular Python packages in the `tools/` directory
+- Each tool package should have a clear `__init__.py` exposing its public interface
+- Tool functions are registered in the database with exact module paths
+- Tools should be self-contained with their own requirements and documentation
+
+## Database Persistence
+- Docker volumes used for persistent storage
+- Volumes survive container restarts and rebuilds
+- Never use `docker compose down -v` in development
+- Regular backups stored in `archives/docker_archive/database_backups/`
+
+## Search Integration
+- SearXNG used as primary search engine
+- Search tools exposed through standardized interface
+- Tool configuration stored in database
+- Module paths must point to exact function (e.g., `tools.search_tool.search_web`)
+
+## Error Handling
+- Detailed error logging in Django admin
+- Tool errors captured and displayed in UI
+- Database errors logged with full context
+- Backup restoration procedures for data recovery
+
+## Development Patterns
+- Use Docker Compose for service orchestration
+- Maintain persistent database state
+- Document all tool interfaces
+- Keep module paths up to date in admin
+- Regular database backups
+- Clear separation of development and production configs 
