@@ -229,16 +229,207 @@
 - Tool configuration stored in database
 - Module paths must point to exact function (e.g., `tools.search_tool.search_web`)
 
-## Error Handling
-- Detailed error logging in Django admin
-- Tool errors captured and displayed in UI
-- Database errors logged with full context
-- Backup restoration procedures for data recovery
-
 ## Development Patterns
 - Use Docker Compose for service orchestration
 - Maintain persistent database state
 - Document all tool interfaces
 - Keep module paths up to date in admin
 - Regular database backups
-- Clear separation of development and production configs 
+- Clear separation of development and production configs
+
+## Backup and Restore Patterns
+
+### Core Backup Strategy
+The system implements a multi-tiered backup approach:
+
+1. **Comprehensive Backup** (`backup_dev_full.sh`)
+   - Full database dumps with verification
+   - Media files and configurations
+   - Application state and fixtures
+   - Container versions and Git state
+   - Compressed with integrity checks
+
+2. **Database-Only Backup** (`backup_dev_db.sh`)
+   - Compressed SQL dumps
+   - Integrity verification
+   - Transaction validation
+   - Schema verification
+   - Automatic rotation
+
+### Storage Pattern
+- Primary Location: `LedgerFlow_Archive/backups/dev/`
+- Format Standards:
+  - Full backups: `.tar.gz`
+  - DB-only: `.sql.gz`
+- Naming Convention: `ledgerflow_[type]_backup_YYYYMMDD_HHMMSS.*`
+
+### Safety Patterns
+1. Volume Protection
+   ```bash
+   docker volume create --label com.ledgerflow.protect=true ledger_dev_db_data
+   docker volume create --label com.ledgerflow.protect=true ledger_prod_db_data
+   ```
+
+2. Command Safety
+   - Docker CLI wrapper (`ledger_docker`)
+   - Environment locks in `manage.py`
+   - Protected volume checks
+   - Safe Makefile targets
+
+### Backup Schedule Pattern
+- Daily full backups (2 AM)
+- Hourly database-only backups
+- 7-day retention (full)
+- 48-hour retention (hourly)
+
+### Monitoring Pattern
+- Size verification (10KB minimum)
+- Backup success logging
+- Restore test validation
+- Transaction count tracking
+- Schema validation
+
+### Recovery Pattern
+1. Database-Only Recovery:
+   ```bash
+   ./restore_db_clean.sh backups/dev/[backup_file].sql.gz
+   ```
+
+2. Full System Recovery:
+   ```bash
+   ./scripts/db/restore_full_backup.sh backups/dev/[backup_file].tar.gz
+   ```
+
+3. Verification Steps:
+   - Transaction count check
+   - Media file verification
+   - Application functionality test
+   - Configuration validation
+
+## Critical Safety Implementation Patterns
+
+### Volume Protection Pattern
+1. Protected Volume Creation:
+   ```bash
+   docker volume create --label com.ledgerflow.protect=true ledger_dev_db_data
+   docker volume create --label com.ledgerflow.protect=true ledger_prod_db_data
+   ```
+2. Protection Verification:
+   - Label persistence checks
+   - Deletion attempt prevention
+   - Recreation procedure validation
+
+### Command Safety Pattern
+1. Docker CLI Wrapper (`ledger_docker`):
+   - Production environment detection
+   - Protected volume verification
+   - Command restriction enforcement
+   - Makefile integration for safety
+
+2. Environment Lock Pattern:
+   - Production command restrictions in `manage.py`
+   - Migration safeguards
+   - Environment validation checks
+   - Safe command execution paths
+
+### Backup Safety Pattern
+1. Verification Layers:
+   - Size verification (10KB minimum)
+   - Integrity checking
+   - Transaction count validation
+   - Schema structure verification
+
+2. Automated Schedule:
+   - Hourly database backups
+   - Daily full system backups
+   - 7-day retention policy
+   - Integrity monitoring
+
+### CI/CD Safety Integration
+1. Automated Testing:
+   - Restore-smoke tests
+   - Backup verification jobs
+   - Environment isolation tests
+   - Safety measure validation
+
+2. Pipeline Safeguards:
+   - Pre-deployment checks
+   - Volume protection verification
+   - Backup integrity validation
+   - Environment separation tests
+
+### Emergency Response Pattern
+1. Immediate Actions:
+   ```bash
+   # Stop all services safely
+   ledger_docker compose down
+   
+   # Verify volume protection
+   docker volume ls --filter label=com.ledgerflow.protect=true
+   
+   # Initiate emergency backup
+   ./backup_dev_full.sh --emergency
+   ```
+
+2. Recovery Steps:
+   - Validate backup integrity
+   - Verify environment isolation
+   - Test restore in safe environment
+   - Verify data consistency
+
+### Monitoring and Verification Pattern
+1. Continuous Monitoring:
+   - Backup size tracking
+   - Volume protection status
+   - Environment state validation
+   - Command execution logging
+
+2. Regular Verification:
+   - Daily backup tests
+   - Weekly restore tests
+   - Monthly security audits
+   - Quarterly recovery drills
+
+## Standardized Container Configuration
+
+### Development Environment
+```yaml
+services:
+  django:
+    image: ledgerflow-django
+    ports:
+      - "9001:8000"  # Development port
+    
+  postgres:
+    image: postgres:17.4
+    ports:
+      - "5432:5432"  # Internal only, use adminer
+    healthcheck:
+      enabled: true
+    
+  redis:
+    image: redis:7.2
+    ports:
+      - "6379:6379"  # Internal only
+    
+  adminer:
+    image: adminer
+    ports:
+      - "8082:8080"  # Database management
+    
+  searxng:
+    image: searxng/searxng:latest
+    ports:
+      - "127.0.0.1:8080:8080"  # Local only
+    
+  caddy:
+    image: caddy:2-alpine
+    # No direct port mapping, handles proxying
+```
+
+### Production Environment
+Identical configuration except:
+- No adminer service
+- Different port mappings
+- Additional security measures
+- No exposed development ports 

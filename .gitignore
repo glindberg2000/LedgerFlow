@@ -52,3 +52,28 @@ Thumbs.db
 *.dump
 *.bak
 *.tmp
+
+# Environment files
+.env
+.env.dev
+.env.prod
+!.env.example
+
+# Settings files with sensitive data
+**/settings.yml
+!**/settings.yml.example
+
+# Keys and certificates
+*.key
+*.pem
+*.crt
+*.cert
+*.p12
+
+# Backup files
+backups/
+archives/backups/
+
+# Temporary directories
+searxng-fresh/
+**/test/

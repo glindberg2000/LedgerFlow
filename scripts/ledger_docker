@@ -1,0 +1,39 @@
+#!/bin/bash
+
+# LedgerFlow Docker CLI wrapper
+# Prevents accidental volume deletion and enforces environment safety
+
+# Function to check if we're targeting a protected volume
+check_protected_volumes() {
+    local compose_file=$1
+    if [ -f "$compose_file" ]; then
+        volumes=$(grep -A 5 "volumes:" "$compose_file" | grep -v "volumes:" | grep -v "^-" | awk '{print $1}' | tr -d ':')
+        for volume in $volumes; do
+            if docker volume inspect "$volume" 2>/dev/null | grep -q "com.ledgerflow.protect.*true"; then
+                return 0
+            fi
+        done
+    fi
+    return 1
+}
+
+# Parse command line arguments
+if [[ "$*" == *"down"*"-v"* ]]; then
+    # Check if we're in production
+    if [[ "$*" == *"-p"*"prod"* ]] || [[ "$*" == *"--project-name"*"prod"* ]]; then
+        echo "🚫 ERROR: Refusing to remove volumes in production environment"
+        echo "Use 'make nuke ENV=dev' for development environment cleanup"
+        exit 1
+    fi
+    
+    # Check for protected volumes
+    compose_file="docker-compose.yml"
+    if check_protected_volumes "$compose_file"; then
+        echo "🚫 ERROR: Protected volumes detected"
+        echo "Use 'make nuke ENV=dev' if you REALLY know what you're doing"
+        exit 1
+    fi
+fi
+
+# Execute the original Docker command
+exec docker "$@" 

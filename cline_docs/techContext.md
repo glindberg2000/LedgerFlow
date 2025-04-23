@@ -147,6 +147,38 @@
 - Use regular `docker compose down` to preserve data
 - Backup and restore scripts available in project root
 
+### Restore Procedures
+
+The project uses a clean database restore script (`restore_db_clean.sh`) that handles full database restores from compressed backups. The procedure:
+
+1. Accepts a gzipped SQL backup file (typically stored in `LedgerFlow_Archive/backups/dev/`)
+2. Drops all existing tables in the target database
+3. Recreates the public schema
+4. Restores the database from the compressed backup
+
+#### Verified Restore Test Results (2025-04-22)
+
+A full restore test was performed with the following results:
+- Total transactions restored: 1,666
+- Date range: December 2024 - April 2025
+- Data quality checks:
+  - Transaction amounts properly formatted (with cents)
+  - Descriptions intact
+  - Categories preserved where assigned
+  - Source information maintained (e.g. 'wellsfargo_bank_csv')
+  - All related foreign keys and constraints preserved
+
+#### Restore Command Reference
+
+```bash
+# Standard restore procedure
+./restore_db_clean.sh
+
+# Manual restore steps (if needed)
+docker compose -f docker-compose.dev.yml exec -T postgres psql -U newuser mydatabase -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+gunzip -c [backup_file].sql.gz | docker compose -f docker-compose.dev.yml exec -T postgres psql -U newuser mydatabase
+```
+
 ## Development Environment
 - Docker & Docker Compose for service orchestration
 - Django 5.2 with Python 3.12.10

@@ -79,7 +79,7 @@ def search_web(
 
     try:
         # Make the request
-        response = requests.get(f"{host}/search", params=params, timeout=30)
+        response = requests.post(f"{host}/search", params=params, timeout=30)
         response.raise_for_status()
 
         # Parse the response
