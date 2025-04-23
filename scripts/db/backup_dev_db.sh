@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configuration
-BACKUP_DIR="/Users/greg/iCloud Drive (Archive)/repos/LedgerFlow_Archive/backups/dev"
+BACKUP_DIR="$HOME/Library/Mobile Documents/com~apple~CloudDocs/repos/LedgerFlow_Archive/backups/dev"
 RETENTION_DAYS=7
 COMPOSE_FILE="docker-compose.dev.yml"
 DB_CONTAINER="ledger-dev-postgres-1"
@@ -89,4 +89,5 @@ if [ "$FINAL_SIZE" -lt "$MIN_BACKUP_SIZE" ]; then
     exit 1
 fi
 
-log "Backup completed successfully" 
+log "Backup completed successfully"
+log "Note: Backup is stored in iCloud and will be synced automatically" 

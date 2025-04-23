@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configuration
-BACKUP_DIR="/Users/greg/iCloud Drive (Archive)/repos/LedgerFlow_Archive/backups/dev"
+BACKUP_DIR="$HOME/Library/Mobile Documents/com~apple~CloudDocs/repos/LedgerFlow_Archive/backups/dev"
 COMPOSE_FILE="docker-compose.dev.yml"
 MIN_BACKUP_SIZE=10240  # 10KB minimum size
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
@@ -78,6 +78,9 @@ $(docker compose -f $COMPOSE_FILE ps)
 Database Tables:
 ---------------
 $(docker compose -f $COMPOSE_FILE exec -T postgres psql -U newuser mydatabase -c "\dt" 2>/dev/null)
+
+Note: This backup is stored in iCloud and will be synced automatically.
+Location: $BACKUP_DIR
 EOF
 
 # 6. Create compressed archive
@@ -102,4 +105,5 @@ log "Implementing retention policy..."
 find "$BACKUP_DIR" -name "ledgerflow_full_backup_*.tar.gz" -mtime +7 -delete
 
 log "Full backup completed successfully"
-log "Backup location: $BACKUP_DIR/ledgerflow_full_backup_$TIMESTAMP.tar.gz" 
+log "Backup location: $BACKUP_DIR/ledgerflow_full_backup_$TIMESTAMP.tar.gz"
+log "Note: Backup is stored in iCloud and will be synced automatically" 

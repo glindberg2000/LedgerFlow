@@ -6,7 +6,7 @@
 set -e
 
 # Configuration
-BACKUP_DIR="/icloud_backups/pre_migration"
+BACKUP_DIR="$HOME/Library/Mobile Documents/com~apple~CloudDocs/repos/LedgerFlow_Archive/backups/migrations"
 MIN_BACKUP_SIZE=10240  # 10KB minimum
 POSTGRES_CONTAINER="ledgerflow-postgres-1"
 
@@ -22,6 +22,7 @@ mkdir -p "$BACKUP_DIR"
 # Create backup with timestamp
 BACKUP_FILE="$BACKUP_DIR/pre_migration_$(date +%Y%m%d_%H%M%S).dump"
 echo "📦 Creating backup: $BACKUP_FILE"
+echo "Note: This backup will be stored in iCloud at: $BACKUP_DIR"
 
 docker compose exec -T postgres pg_dump -Fc --clean -U "$POSTGRES_USER" -d "$POSTGRES_DB" > "$BACKUP_FILE"
 
@@ -49,4 +50,5 @@ echo "🔄 Running migrations..."
 ALLOW_DANGEROUS=1 docker compose exec django python manage.py migrate
 
 echo "✅ Migrations completed successfully"
-echo "Backup location: $BACKUP_FILE" 
+echo "Backup location: $BACKUP_FILE"
+echo "Note: Backup is stored in iCloud and will be synced automatically" 

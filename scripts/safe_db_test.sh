@@ -6,8 +6,8 @@
 set -e
 
 # Configuration
-DEV_BACKUP_DIR="backups/test"
-PROD_BACKUP_DIR="/Users/greg/Library/Mobile Documents/com~apple~CloudDocs/repos/LedgerFlow_Archive/backups"
+DEV_BACKUP_DIR="$HOME/Library/Mobile Documents/com~apple~CloudDocs/repos/LedgerFlow_Archive/backups/test"
+PROD_BACKUP_DIR="$HOME/Library/Mobile Documents/com~apple~CloudDocs/repos/LedgerFlow_Archive/backups/prod"
 CONTAINER_BACKUP_DIR="/backups/test"
 MIN_BACKUP_SIZE=10240  # 10KB minimum
 
@@ -35,6 +35,7 @@ TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 BACKUP_FILE="$BACKUP_DIR/pre_test_${TIMESTAMP}.dump"
 CONTAINER_BACKUP_FILE="$CONTAINER_BACKUP_DIR/pre_test_${TIMESTAMP}.dump"
 echo "📦 Creating safety backup: $BACKUP_FILE"
+echo "Note: This backup will be stored in iCloud at: $BACKUP_DIR"
 
 # Ensure the backup directory is mounted
 if ! docker compose -f "$COMPOSE_FILE" -p "$PROJECT_NAME" config | grep -q "$BACKUP_DIR"; then
@@ -88,4 +89,6 @@ echo "✅ Safety backup created and verified"
 echo "You can now proceed with database testing"
 echo "To restore this backup:"
 echo "  Development: ./restore_db_clean.sh -f $BACKUP_FILE"
-echo "  Production:  ./restore_db_clean.sh -e prod -f $BACKUP_FILE -u $DB_USER -d $DB_NAME" 
+echo "  Production:  ./restore_db_clean.sh -e prod -f $BACKUP_FILE -u $DB_USER -d $DB_NAME"
+echo
+echo "Note: Backup is stored in iCloud and will be synced automatically" 
