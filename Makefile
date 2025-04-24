@@ -1,4 +1,4 @@
-.PHONY: help dev-up dev-build dev-down prod-up prod-build prod-down migrate makemigrations shell test lint format clean dev prod rollback backup restore nuke status init-prod verify-backup smoke-test
+.PHONY: help dev-up dev-build dev-down prod-up prod-build prod-down migrate makemigrations shell test lint format clean dev prod rollback backup restore nuke status init-prod verify-backup smoke-test setup-data-dirs migrate-safe backup-cron
 
 help:
 	@echo "Available commands:"
@@ -25,6 +25,9 @@ help:
 	@echo "  make init-prod   - Initialize production environment"
 	@echo "  make verify-backup FILE=<path> - Verify backup integrity"
 	@echo "  make smoke-test  - Run smoke tests"
+	@echo "  make setup-data-dirs - Set up data directories"
+	@echo "  make migrate-safe - Run safe database operations"
+	@echo "  make backup-cron - Start backup container"
 
 # Environment validation
 ENV ?= dev
@@ -130,7 +133,7 @@ backup:
 	@mkdir -p backups
 	@BACKUP_FILE=backups/manual_`date +%F_%T`.dump; \
 	docker compose -p $(COMPOSE_PROJECT_NAME) exec -T postgres \
-		pg_dump -U newuser -d mydatabase -Fc --clean > $$BACKUP_FILE; \
+		pg_dump -U $(POSTGRES_USER) -d $(POSTGRES_DB) -Fc --clean > $$BACKUP_FILE; \
 	if [ $$(stat -f%z $$BACKUP_FILE) -lt 10240 ]; then \
 		echo "❌ ERROR: Backup file too small!"; \
 		rm $$BACKUP_FILE; \
@@ -150,8 +153,11 @@ restore: check-env
 		exit 1; \
 	fi
 	@echo "🔄 Restoring from $(FILE)..."
-	@docker compose -p $(COMPOSE_PROJECT_NAME) exec -T postgres \
-		pg_restore -U newuser -d mydatabase --clean --if-exists < $(FILE)
+	@if [[ "$(FILE)" == *.gz ]]; then \
+		gunzip -c "$(FILE)" | docker compose -p $(COMPOSE_PROJECT_NAME) exec -T postgres psql -U $(POSTGRES_USER) -d $(POSTGRES_DB); \
+	else \
+		docker compose -p $(COMPOSE_PROJECT_NAME) exec -T postgres pg_restore -U $(POSTGRES_USER) -d $(POSTGRES_DB) --clean --if-exists < $(FILE); \
+	fi
 
 # Initialize production environment
 init-prod:
@@ -160,25 +166,36 @@ init-prod:
 
 # Verify backup integrity
 verify-backup:
-	@if [ -z "$(FILE)" ]; then \
-		echo "Usage: make verify-backup FILE=path/to/backup.dump"; \
+	@echo "🔍 Verifying latest backup..."
+	@LATEST_BACKUP=$$(ls -t ~/Library/Mobile\ Documents/com~apple~CloudDocs/repos/LedgerFlow_Archive/backups/dev/*.dump 2>/dev/null | head -1); \
+	if [ -z "$$LATEST_BACKUP" ]; then \
+		echo "❌ No backup found"; \
 		exit 1; \
-	fi
-	@echo "🔍 Verifying backup: $(FILE)"
-	@if [ ! -f "$(FILE)" ]; then \
-		echo "❌ File not found"; \
+	fi; \
+	SIZE=$$(stat -f%z "$$LATEST_BACKUP"); \
+	if [ $$SIZE -lt 10240 ]; then \
+		echo "❌ Latest backup too small ($$SIZE bytes)"; \
 		exit 1; \
-	fi
-	@if [ $$(stat -f%z "$(FILE)") -lt 10240 ]; then \
-		echo "❌ Backup file too small"; \
+	fi; \
+	if ! brctl log | grep -q "$$LATEST_BACKUP.*finished"; then \
+		echo "❌ Backup not synced to iCloud"; \
 		exit 1; \
-	fi
-	@docker compose -p ledger-dev exec -T postgres \
-		pg_restore --list "$(FILE)" > /dev/null && \
-		echo "✅ Backup verified successfully" || \
-		(echo "❌ Backup verification failed"; exit 1)
+	fi; \
+	echo "✅ Backup verified: $$LATEST_BACKUP ($$SIZE bytes)"
 
 # Run smoke tests
 smoke-test:
 	@echo "🔬 Running smoke tests..."
-	@./scripts/ledger_docker compose -p ledger-test exec django pytest tests/smoke 
+	@./scripts/ledger_docker compose -p ledger-test exec django pytest tests/smoke
+
+setup-data-dirs:
+	@echo "Setting up data directories..."
+	@./scripts/setup_data_dirs.sh
+
+# Safe database operations
+migrate-safe: verify-backup migrate
+
+# Backup container management
+backup-cron:
+	@echo "Starting backup container..."
+	@docker compose -p $(COMPOSE_PROJECT_NAME) up -d backup 
