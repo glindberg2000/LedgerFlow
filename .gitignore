@@ -77,3 +77,7 @@ archives/backups/
 # Temporary directories
 searxng-fresh/
 **/test/
+
+# real env files
+.env.*
+
