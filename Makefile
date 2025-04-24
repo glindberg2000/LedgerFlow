@@ -15,10 +15,27 @@ help:
 	@echo "  make check-volumes   Verify volume protection"
 	@echo "  make nuke ENV=dev    Destroy environment (dev only)"
 	@echo "  make restore-test FILE=x  Test restore in temporary database"
+	@echo "  make prod-bootstrap TAG=x  First-time prod setup"
 
 # Development environment
 dev:
 	ledger_docker compose -f docker-compose.dev.yml up -d
+
+# Production bootstrap (first-time setup)
+prod-bootstrap:
+	@if [ -z "$(TAG)" ]; then echo "Please specify TAG=version"; exit 1; fi
+	@echo "Starting production bootstrap with tag $(TAG)..."
+	ledger_docker compose -p ledger-prod -f docker-compose.yml -f docker-compose.prod.yml up -d postgres
+	@echo "Waiting for postgres..."
+	@sleep 6
+	ledger_docker compose -p ledger-prod -f docker-compose.yml -f docker-compose.prod.yml ps
+	@echo "Running initial migrations..."
+	ledger_docker compose -p ledger-prod -f docker-compose.yml -f docker-compose.prod.yml exec django python manage.py migrate --noinput
+	@echo "Creating first backup..."
+	make backup ENV=prod
+	@echo "Starting remaining services..."
+	ledger_docker compose -p ledger-prod -f docker-compose.yml -f docker-compose.prod.yml up -d
+	@echo "Bootstrap complete. Run 'make smoke ENV=prod' to verify."
 
 # Database backup
 backup:
@@ -71,4 +88,4 @@ nuke:
 	@read -p "Type DESTROY to wipe $(ENV): " x; [ "$$x" = "DESTROY" ] && ledger_docker compose -f docker-compose.$(ENV).yml down -v
 
 # Declare phony targets
-.PHONY: help dev backup restore restore-test check-volumes nuke
+.PHONY: help dev backup restore restore-test check-volumes nuke prod-bootstrap
