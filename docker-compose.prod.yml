@@ -4,7 +4,7 @@ name: ledger-prod
 
 services:
   django:
-    image: myregistry/ledgerflow:${TAG}@sha256:<digest>
+    image: ledgerflow:${TAG:-latest}
     depends_on:
       postgres:
         condition: service_healthy

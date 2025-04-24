@@ -51,7 +51,7 @@ def search_web(
         engines: List of search engines to use (default: None, uses SearXNG defaults)
         language: Language code for results (default: en-US)
         safesearch: SafeSearch level (default: MODERATE)
-        host: SearXNG host URL (default: http://localhost:8080)
+        host: SearXNG host URL (default: uses Docker container name)
 
     Returns:
         List of dictionaries containing search results with 'title', 'url', and 'content' keys
@@ -63,7 +63,7 @@ def search_web(
         raise ValueError("num_results must be greater than 0")
 
     # Get host from environment or use default
-    host = host or os.getenv("SEARXNG_HOST", "http://localhost:8080")
+    host = host or os.getenv("SEARXNG_HOST", "http://ledger-dev-searxng-1:8080")
 
     # Prepare search parameters
     params = {

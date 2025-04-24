@@ -1,11 +1,38 @@
 # see https://docs.searxng.org/admin/settings/settings.html#settings-use-default-settings
 use_default_settings: true
+
 server:
-  # base_url is defined in the SEARXNG_BASE_URL environment variable, see .env and docker-compose.yml
-  secret_key: "ultrasecretkey"  # change this!
-  limiter: true  # can be disabled for a private instance
-  image_proxy: true
-ui:
-  static_use_hash: true
+    secret_key: "${SEARXNG_SECRET_KEY:-changeme}"
+    limiter: false
+    image_proxy: true
+    http_protocol_version: "1.0"
+    method: "POST"
+    port: 8080
+    bind_address: "0.0.0.0"
+    base_url: false
+    public_instance: true
+
 redis:
-  url: redis://redis:6379/0
+    url: redis://redis:6379/0
+
+search:
+    safe_search: 0
+    autocomplete: 'google'
+    default_lang: "en"
+    default_doi_resolver: 'oadoi.org'
+    formats:
+        - html
+        - json
+
+ui:
+    static_use_hash: true
+    default_theme: simple
+
+general:
+    debug: true
+    instance_name: "LedgerFlow Search"
+
+engines:
+    - name: google
+      engine: google
+      shortcut: g

@@ -94,4 +94,19 @@ echo "📁 Data root: $DATA_ROOT"
 echo "📁 PostgreSQL data: $PG_DATA"
 echo "📁 Backups (iCloud): $BACKUP_ROOT"
 echo
-echo "Note: Backups are stored in iCloud and will be synced automatically." 
+echo "Note: Backups are stored in iCloud and will be synced automatically."
+
+# Create PostgreSQL data directory
+PG_DATA_DIR=~/LedgerFlow_data/pg
+echo "Setting up PostgreSQL data directory at $PG_DATA_DIR..."
+mkdir -p "$PG_DATA_DIR"
+chmod 700 "$PG_DATA_DIR"
+
+# Create backup directories
+BACKUP_DIR=~/Library/Mobile\ Documents/com~apple~CloudDocs/repos/LedgerFlow_Archive/backups
+echo "Setting up backup directories at $BACKUP_DIR..."
+mkdir -p "$BACKUP_DIR"/{dev,prod,test}/logs
+
+echo "✅ Data directories created successfully"
+echo "PostgreSQL data: $PG_DATA_DIR"
+echo "Backups: $BACKUP_DIR" 
