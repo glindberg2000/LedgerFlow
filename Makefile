@@ -1,3 +1,8 @@
+
+ifeq ($(shell which ledger_docker),)
+$(error "🚫  Use 'ledger_docker' wrapper (safety layer missing)")
+endif
+
 # Variables
 ENV ?= dev
 TEST_DB ?= test_restore_db
