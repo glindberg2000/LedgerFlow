@@ -1,44 +1,20 @@
-#!/bin/bash
+#!/usr/bin/env bash
+#
+# Safety wrapper – blocks destructive Docker commands
+#
+set -euo pipefail
 
-# Safety wrapper for docker commands
-# Prevents accidental data loss and enforces backup verification
-
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
-
-# Set environment indicator in prompt
-if [[ "$@" == *"-prod"* ]]; then
-    export PS1="[${RED}ledgerflow-prod${NC}] $PS1"
-else
-    export PS1="[${GREEN}ledgerflow-dev${NC}] $PS1"
+# -------- guard 1: ban docker compose down -v ----------
+if [[ "$*" =~ down[[:space:]]+-v ]]; then
+    printf "🚫  'docker compose down -v' is disabled — volume wipe blocked.\n"
+    exit 13
 fi
 
-# Block dangerous commands
-if [[ "$@" == *"down -v"* ]]; then
-    echo -e "${RED}🚫 ERROR: Volume deletion blocked for safety${NC}"
-    echo "Use 'make nuke ENV=dev' for controlled environment reset"
-    exit 1
+# -------- guard 2: prod volume protection --------------
+if [[ "${LEDGER_ENV:-dev}" == "prod" ]] && [[ "$*" =~ (exec|run).*(-U|--user).*postgres ]]; then
+    printf "🚫  Direct psql access to prod DB blocked.\n"
+    exit 13
 fi
 
-# Ensure backups exist before risky operations
-if [[ "$@" == *"migrate"* ]] || [[ "$@" == *"restore"* ]]; then
-    LATEST_BACKUP=$(ls -t ~/Library/Mobile\ Documents/com~apple~CloudDocs/repos/LedgerFlow_Archive/backups/dev/*.dump 2>/dev/null | head -1)
-    
-    if [ -z "$LATEST_BACKUP" ]; then
-        echo -e "${RED}🚫 ERROR: No backup found before database operation${NC}"
-        echo "Run 'make backup' first"
-        exit 1
-    fi
-    
-    BACKUP_SIZE=$(stat -f%z "$LATEST_BACKUP")
-    if [ "$BACKUP_SIZE" -lt 10240 ]; then
-        echo -e "${RED}🚫 ERROR: Latest backup is too small (< 10KB)${NC}"
-        echo "Run 'make backup' to create a new backup"
-        exit 1
-    fi
-fi
-
-# Pass through to real docker command
-exec docker "$@" 
+# -------- pass-through --------------------------------
+command docker "$@" 

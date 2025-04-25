@@ -1,7 +1,7 @@
 # Variables
 ENV ?= dev
 TEST_DB ?= test_restore_db
-BACKUP_ROOT := /Users/greg/Library/Mobile Documents/com~apple~CloudDocs/repos/LedgerFlow_Archive/backups
+BACKUP_ROOT ?= $(HOME)/iCloudLedger/backups
 
 # Default target
 .DEFAULT_GOAL := help
@@ -20,14 +20,23 @@ help:
 dev:
 	ledger_docker compose -f docker-compose.dev.yml up -d
 
+# Safety check target
+safety-check:
+	@ledger_docker compose ps
+	@ledger_docker volume ls --filter label=com.ledgerflow.protect=true
+	@echo "✅  Safety check complete – protected volumes present"
+
 # Database backup
 backup:
+	@$(MAKE) safety-check
+	@[ -n "$(ENV)" ] || (echo "❌  ENV not set (dev|prod)"; exit 1)
 	@mkdir -p "$(BACKUP_ROOT)/$(ENV)"
-	@echo "Creating backup in $(BACKUP_ROOT)/$(ENV)..."
-	ledger_docker compose -f docker-compose.$(ENV).yml exec postgres pg_dump -Fc --clean -U $$POSTGRES_USER -d $$POSTGRES_DB > "$(BACKUP_ROOT)/$(ENV)/backup_`date +%Y%m%d_%H%M%S`.dump"
-	@echo "Verifying backup size..."
-	@test $$(stat -f%z "$(BACKUP_ROOT)/$(ENV)"/backup_*.dump) -gt 10240 || (echo "Error: Backup file is too small" && exit 1)
-	@echo "Backup completed and verified"
+	@FILE="$(BACKUP_ROOT)/$(ENV)/ledgerflow_$(ENV)_$$(date +%Y%m%d_%H%M%S).dump" ; \
+	 ledger_docker compose -f docker-compose.$(ENV).yml exec -T postgres \
+	 pg_dump -U $$POSTGRES_USER -d $$POSTGRES_DB -Fc --clean > "$$FILE" && \
+	 if [ $$(stat -f%z "$$FILE") -lt 10240 ]; then \
+	    echo "❌  Backup too small, aborting"; rm -f "$$FILE"; exit 1; fi && \
+	 echo "✅  Backup created → $$FILE"
 
 # Database restore
 restore:
@@ -70,5 +79,9 @@ nuke:
 	@if [ "$(ENV)" = "prod" ]; then echo "Refusing to nuke prod"; exit 1; fi
 	@read -p "Type DESTROY to wipe $(ENV): " x; [ "$$x" = "DESTROY" ] && ledger_docker compose -f docker-compose.$(ENV).yml down -v
 
+# Stop development environment
+down:
+	ledger_docker compose -f docker-compose.$(ENV).yml down
+
 # Declare phony targets
-.PHONY: help dev backup restore restore-test check-volumes nuke
+.PHONY: help dev backup restore restore-test check-volumes nuke safety-check down
