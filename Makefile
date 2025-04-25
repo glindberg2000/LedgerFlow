@@ -1,64 +1,87 @@
-.PHONY: help dev-up dev-build dev-down prod-up prod-build prod-down migrate makemigrations shell test lint format clean
+# Variables
+ENV ?= dev
+TEST_DB ?= test_restore_db
+BACKUP_ROOT ?= $(HOME)/iCloudLedger/backups
 
+# Default target
+.DEFAULT_GOAL := help
+
+# Help target
 help:
-	@echo "Available commands:"
-	@echo "  make dev-up      - Start development environment"
-	@echo "  make dev-build   - Build development environment"
-	@echo "  make dev-down    - Stop development environment"
-	@echo "  make prod-up     - Start production environment"
-	@echo "  make prod-build  - Build production environment"
-	@echo "  make prod-down   - Stop production environment"
-	@echo "  make migrate     - Run database migrations"
-	@echo "  make migrations  - Create database migrations"
-	@echo "  make shell       - Open Django shell"
-	@echo "  make test        - Run tests"
-	@echo "  make lint        - Run linters"
-	@echo "  make format      - Format code"
-	@echo "  make clean       - Remove Python artifacts"
+	@echo "LedgerFlow Development Commands:"
+	@echo "  make dev              Start development environment"
+	@echo "  make backup          Backup database"
+	@echo "  make restore FILE=x  Restore database from backup"
+	@echo "  make check-volumes   Verify volume protection"
+	@echo "  make nuke ENV=dev    Destroy environment (dev only)"
+	@echo "  make restore-test FILE=x  Test restore in temporary database"
 
-dev-up:
-	docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+# Development environment
+dev:
+	ledger_docker compose -f docker-compose.dev.yml up -d
 
-dev-build:
-	docker compose -f docker-compose.yml -f docker-compose.dev.yml build
+# Safety check target
+safety-check:
+	@ledger_docker compose ps
+	@ledger_docker volume ls --filter label=com.ledgerflow.protect=true
+	@echo "✅  Safety check complete – protected volumes present"
 
-dev-down:
-	docker compose -f docker-compose.yml -f docker-compose.dev.yml down
+# Database backup
+backup:
+	@$(MAKE) safety-check
+	@[ -n "$(ENV)" ] || (echo "❌  ENV not set (dev|prod)"; exit 1)
+	@mkdir -p "$(BACKUP_ROOT)/$(ENV)"
+	@FILE="$(BACKUP_ROOT)/$(ENV)/ledgerflow_$(ENV)_$$(date +%Y%m%d_%H%M%S).dump" ; \
+	 ledger_docker compose -f docker-compose.$(ENV).yml exec -T postgres \
+	 pg_dump -U $$POSTGRES_USER -d $$POSTGRES_DB -Fc --clean > "$$FILE" && \
+	 if [ $$(stat -f%z "$$FILE") -lt 10240 ]; then \
+	    echo "❌  Backup too small, aborting"; rm -f "$$FILE"; exit 1; fi && \
+	 echo "✅  Backup created → $$FILE"
 
-prod-up:
-	docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# Database restore
+restore:
+	@if [ -z "$(FILE)" ]; then echo "Please specify FILE=path/to/backup in $(BACKUP_ROOT)/$(ENV)"; exit 1; fi
+	@if [ ! -f "$(FILE)" ]; then echo "Error: Backup file $(FILE) not found"; exit 1; fi
+	@echo "Restoring from $(FILE)..."
+	cat "$(FILE)" | ledger_docker compose -f docker-compose.$(ENV).yml exec -T postgres pg_restore --no-owner --no-privileges --clean --if-exists -U $$POSTGRES_USER -d $$POSTGRES_DB
 
-prod-build:
-	docker compose -f docker-compose.yml -f docker-compose.prod.yml build
+# Test restore in temporary database
+restore-test:
+	@if [ -z "$(FILE)" ]; then echo "Please specify FILE=path/to/backup in $(BACKUP_ROOT)/$(ENV)"; exit 1; fi
+	@if [ ! -f "$(FILE)" ]; then echo "Error: Backup file $(FILE) not found"; exit 1; fi
+	@echo "Creating temporary database $(TEST_DB)..."
+	ledger_docker compose -f docker-compose.$(ENV).yml exec -T postgres psql -U $$POSTGRES_USER -d $$POSTGRES_DB -c "DROP DATABASE IF EXISTS $(TEST_DB)"
+	ledger_docker compose -f docker-compose.$(ENV).yml exec -T postgres psql -U $$POSTGRES_USER -d $$POSTGRES_DB -c "CREATE DATABASE $(TEST_DB)"
+	@echo "Restoring backup to temporary database..."
+	cat "$(FILE)" | ledger_docker compose -f docker-compose.$(ENV).yml exec -T postgres pg_restore --no-owner --no-privileges --clean --if-exists -U $$POSTGRES_USER -d $(TEST_DB)
+	@echo "Verifying database structure..."
+	ledger_docker compose -f docker-compose.$(ENV).yml exec -T postgres psql -U $$POSTGRES_USER -d $(TEST_DB) -c "SELECT COUNT(*) FROM pg_tables WHERE schemaname = 'public'"
+	@echo "Verifying data content..."
+	@echo "1. Checking auth_user table..."
+	ledger_docker compose -f docker-compose.$(ENV).yml exec -T postgres psql -U $$POSTGRES_USER -d $(TEST_DB) -c "SELECT COUNT(*) FROM auth_user"
+	@echo "2. Checking profiles_processingtask table..."
+	ledger_docker compose -f docker-compose.$(ENV).yml exec -T postgres psql -U $$POSTGRES_USER -d $(TEST_DB) -c "SELECT COUNT(*) FROM profiles_processingtask"
+	@echo "3. Checking profiles_transaction table..."
+	ledger_docker compose -f docker-compose.$(ENV).yml exec -T postgres psql -U $$POSTGRES_USER -d $(TEST_DB) -c "SELECT COUNT(*) FROM profiles_transaction"
+	@echo "4. Sample of recent transactions..."
+	ledger_docker compose -f docker-compose.$(ENV).yml exec -T postgres psql -U $$POSTGRES_USER -d $(TEST_DB) -c "\d profiles_transaction"
+	ledger_docker compose -f docker-compose.$(ENV).yml exec -T postgres psql -U $$POSTGRES_USER -d $(TEST_DB) -c "SELECT id, transaction_date, amount FROM profiles_transaction ORDER BY transaction_date DESC LIMIT 5"
+	@echo "Cleaning up..."
+	ledger_docker compose -f docker-compose.$(ENV).yml exec -T postgres psql -U $$POSTGRES_USER -d $$POSTGRES_DB -c "DROP DATABASE $(TEST_DB)"
+	@echo "Restore test completed successfully"
 
-prod-down:
-	docker compose -f docker-compose.yml -f docker-compose.prod.yml down
+# Check volume protection
+check-volumes:
+	@./scripts/verify_volumes.sh $(ENV)
 
-migrate:
-	docker compose -f docker-compose.yml -f docker-compose.dev.yml exec django python manage.py migrate
+# Destroy environment (dev only)
+nuke:
+	@if [ "$(ENV)" = "prod" ]; then echo "Refusing to nuke prod"; exit 1; fi
+	@read -p "Type DESTROY to wipe $(ENV): " x; [ "$$x" = "DESTROY" ] && ledger_docker compose -f docker-compose.$(ENV).yml down -v
 
-migrations:
-	docker compose -f docker-compose.yml -f docker-compose.dev.yml exec django python manage.py makemigrations
+# Stop development environment
+down:
+	ledger_docker compose -f docker-compose.$(ENV).yml down
 
-shell:
-	docker compose -f docker-compose.yml -f docker-compose.dev.yml exec django python manage.py shell
-
-test:
-	docker compose -f docker-compose.yml -f docker-compose.dev.yml exec django python manage.py test
-
-lint:
-	docker compose -f docker-compose.yml -f docker-compose.dev.yml exec django flake8 .
-
-format:
-	docker compose -f docker-compose.yml -f docker-compose.dev.yml exec django black .
-	docker compose -f docker-compose.yml -f docker-compose.dev.yml exec django isort .
-
-clean:
-	find . -type d -name "__pycache__" -exec rm -r {} +
-	find . -type f -name "*.pyc" -delete
-	find . -type f -name "*.pyo" -delete
-	find . -type f -name "*.pyd" -delete
-	find . -type f -name ".coverage" -delete
-	find . -type d -name "*.egg-info" -exec rm -r {} +
-	find . -type d -name "*.egg" -exec rm -r {} +
-	find . -type d -name ".pytest_cache" -exec rm -r {} + 
+# Declare phony targets
+.PHONY: help dev backup restore restore-test check-volumes nuke safety-check down

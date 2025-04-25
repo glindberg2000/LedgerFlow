@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+#
+# Safety wrapper – blocks destructive Docker commands
+#
+set -euo pipefail
+
+# -------- guard 1: ban docker compose down -v ----------
+if [[ "$*" =~ down[[:space:]]+-v ]]; then
+    printf "🚫  'docker compose down -v' is disabled — volume wipe blocked.\n"
+    exit 13
+fi
+
+# -------- guard 2: prod volume protection --------------
+if [[ "${LEDGER_ENV:-dev}" == "prod" ]] && [[ "$*" =~ (exec|run).*(-U|--user).*postgres ]]; then
+    printf "🚫  Direct psql access to prod DB blocked.\n"
+    exit 13
+fi
+
+# -------- pass-through --------------------------------
+command docker "$@" 

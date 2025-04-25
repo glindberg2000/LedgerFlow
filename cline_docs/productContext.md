@@ -1,4 +1,23 @@
-# Product Context
+# LedgerFlow Product Context
+
+## Core Purpose
+LedgerFlow is a financial transaction management and categorization system that helps businesses track and categorize their expenses.
+
+## Critical Safety Requirements
+- **Production Data Protection**: Production database volumes must NEVER be deleted accidentally
+- **Environment Isolation**: Development and production environments must be strictly separated
+- **Backup Integrity**: All backups must be verified for size and content
+- **Service Isolation**: Different services (e.g., core app vs SearXNG) must run in separate compose stacks
+
+## Recent Incidents
+- 2025-04-22: Production DB volume wiped (3rd occurrence) during SearXNG configuration
+- Impact: 3-day data loss, recovered from Apr 19 backup
+- Root Cause: Lack of safeguards against volume deletion and inadequate backup verification
+
+## Current Status
+- Emergency recovery completed with 3-day-old backup
+- Implementing critical safety measures before resuming feature work
+- All feature work (including SearXNG) is blocked until safety measures are in place
 
 ## Product Overview
 

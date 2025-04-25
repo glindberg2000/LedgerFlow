@@ -1,15 +1,12 @@
 #!/usr/bin/env python
-"""Django's command-line utility for administrative tasks."""
 import os
 import sys
 
-
 def main():
-    """Run administrative tasks."""
-    # Add the current directory to the Python path
-    sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
-
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "pdf_extractor_web.settings")
+    if os.getenv("LEDGER_ENV") == "prod" and os.getenv("ALLOW_DANGEROUS") != "1":
+        sys.exit("Refusing to run mgmt commands directly in prod container.")
+    
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'ledgerflow.settings')
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:
@@ -20,6 +17,5 @@ def main():
         ) from exc
     execute_from_command_line(sys.argv)
 
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

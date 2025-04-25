@@ -280,8 +280,8 @@ IMPORTANT: Your response must be a valid JSON object."""
                     module_path = tool.module_path
                     module_name = module_path.split(".")[-1]
                     module = __import__(module_path, fromlist=[module_name])
-                    # Get the tool function - use search_web for searxng_search tool
-                    if tool_name == "searxng_search":
+                    # Get the tool function - use search_web for both search tools
+                    if tool_name in ["searxng_search", "brave_search"]:
                         tool_function = getattr(module, "search_web")
                     else:
                         tool_function = getattr(module, module_name)
